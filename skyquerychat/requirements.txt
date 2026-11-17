@@ -1,0 +1,14 @@
+# --- core (the project runs with just this) ---
+numpy>=1.24
+
+# --- web UI (optional) ---
+streamlit>=1.35
+pandas>=2.0
+
+# --- LLM planner (optional, install only the one you use) ---
+anthropic>=0.40      # Claude
+openai>=1.40         # OpenAI, and Gemini via its OpenAI-compatible endpoint
+
+# --- real NASA data (optional) ---
+earthaccess>=0.14
+h5py>=3.10
