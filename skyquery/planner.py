@@ -147,31 +147,40 @@ class LLMPlanner:
         env = os.environ
         # Check st.secrets as well if running inside Streamlit Cloud
         groq_key = env.get("GROQ_API_KEY") or env.get("GROK_API_KEY")
-        if not groq_key:
+        openai_key = env.get("OPENAI_API_KEY")
+        if not groq_key or not openai_key:
             try:
                 import streamlit as st
                 if hasattr(st, "secrets"):
-                    if "GROQ_API_KEY" in st.secrets:
-                        groq_key = str(st.secrets["GROQ_API_KEY"])
-                    elif "groq_api_key" in st.secrets:
-                        groq_key = str(st.secrets["groq_api_key"])
-                    if groq_key:
-                        os.environ["GROQ_API_KEY"] = groq_key
+                    if not groq_key:
+                        if "GROQ_API_KEY" in st.secrets:
+                            groq_key = str(st.secrets["GROQ_API_KEY"])
+                        elif "groq_api_key" in st.secrets:
+                            groq_key = str(st.secrets["groq_api_key"])
+                        if groq_key:
+                            os.environ["GROQ_API_KEY"] = groq_key
+                    if not openai_key:
+                        if "OPENAI_API_KEY" in st.secrets:
+                            openai_key = str(st.secrets["OPENAI_API_KEY"])
+                        elif "openai_api_key" in st.secrets:
+                            openai_key = str(st.secrets["openai_api_key"])
+                        if openai_key:
+                            os.environ["OPENAI_API_KEY"] = openai_key
             except Exception:
                 pass
 
         if prov in ("auto", "groq") and groq_key:
             self.provider = "groq"
             self.model = env.get("SKYQUERY_MODEL", "openai/gpt-oss-120b")
+        elif prov in ("auto", "openai") and openai_key:
+            self.provider = "openai"
+            self.model = env.get("SKYQUERY_MODEL", "gpt-4o-mini")
         elif prov in ("auto", "anthropic") and env.get("ANTHROPIC_API_KEY"):
             self.provider = "anthropic"
             self.model = env.get("SKYQUERY_MODEL", "claude-sonnet-5-5")
         elif prov in ("auto", "gemini") and (env.get("GEMINI_API_KEY") or env.get("GOOGLE_API_KEY")):
             self.provider = "gemini"
             self.model = env.get("SKYQUERY_MODEL", "gemini-2.5-flash")
-        elif prov in ("auto", "openai") and env.get("OPENAI_API_KEY"):
-            self.provider = "openai"
-            self.model = env.get("SKYQUERY_MODEL", "gpt-4o-mini")
 
     @property
     def available(self) -> bool:

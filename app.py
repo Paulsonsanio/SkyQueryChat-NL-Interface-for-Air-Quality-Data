@@ -268,7 +268,7 @@ def get_agent(use_llm: bool, groq_key_hash: str = "") -> SkyQueryAgent:
 
 
 def get_llm_probe() -> tuple[LLMPlanner, str]:
-    planner = LLMPlanner("groq")
+    planner = LLMPlanner("auto")
     status = planner.startup_self_test() if planner.available else "No API key configured"
     return planner, status
 
@@ -625,16 +625,22 @@ with st.sidebar:
     st.markdown("### Configuration")
 
     if not llm_probe.available:
-        st.info("💡 **LLM Planner is offline.** Enter your Groq API Key below to activate it:")
+        st.info("💡 **LLM Planner is offline.** Enter your API Key below to activate it:")
         user_key = st.text_input(
-            "Groq API Key",
+            "API Key (Groq or OpenAI)",
             type="password",
-            placeholder="gsk_...",
-            help="Get a free key from https://console.groq.com. Alternatively, add GROQ_API_KEY to Streamlit Cloud Settings → Secrets.",
-            key="sidebar_groq_key_input",
+            placeholder="gsk_... or sk-...",
+            help="Enter a Groq (gsk_...) or OpenAI (sk-...) API key, or add it to Streamlit Cloud Settings → Secrets.",
+            key="sidebar_api_key_input",
         )
-        if user_key and user_key.strip() != groq_key_val:
-            os.environ["GROQ_API_KEY"] = user_key.strip()
+        if user_key and user_key.strip():
+            k = user_key.strip()
+            if k.startswith("gsk_"):
+                os.environ["GROQ_API_KEY"] = k
+                os.environ["SKYQUERY_PROVIDER"] = "groq"
+            else:
+                os.environ["OPENAI_API_KEY"] = k
+                os.environ["SKYQUERY_PROVIDER"] = "openai"
             st.rerun()
 
     use_llm = st.toggle(
