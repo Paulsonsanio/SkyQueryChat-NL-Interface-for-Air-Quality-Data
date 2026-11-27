@@ -1,0 +1,24 @@
+# Environment & Secrets
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Python Cache & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# References & Temporary Work
+ref_floatchat/
+signature_crop_test.png
+signature_cropped.jpg
+
+# OS Specific
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+# --- core dependencies ---
+numpy>=1.24
+pandas>=2.0
+altair>=5.0
+
+# --- streamlit web UI ---
+streamlit>=1.35
+
+# --- LLM planners ---
+openai>=1.40         # Groq, OpenAI, and Gemini via OpenAI-compatible endpoints
+anthropic>=0.40      # Claude (optional)
+
+# --- NASA Earthdata & HDF5 telemetry (optional for real data downloads) ---
+earthaccess>=0.14
+h5py>=3.10
