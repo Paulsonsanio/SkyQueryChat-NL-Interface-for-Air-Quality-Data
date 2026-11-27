@@ -145,7 +145,22 @@ class LLMPlanner:
         if prov in ("none", "off", "rules"):
             return
         env = os.environ
-        if prov in ("auto", "groq") and (env.get("GROQ_API_KEY") or env.get("GROK_API_KEY")):
+        # Check st.secrets as well if running inside Streamlit Cloud
+        groq_key = env.get("GROQ_API_KEY") or env.get("GROK_API_KEY")
+        if not groq_key:
+            try:
+                import streamlit as st
+                if hasattr(st, "secrets"):
+                    if "GROQ_API_KEY" in st.secrets:
+                        groq_key = str(st.secrets["GROQ_API_KEY"])
+                    elif "groq_api_key" in st.secrets:
+                        groq_key = str(st.secrets["groq_api_key"])
+                    if groq_key:
+                        os.environ["GROQ_API_KEY"] = groq_key
+            except Exception:
+                pass
+
+        if prov in ("auto", "groq") and groq_key:
             self.provider = "groq"
             self.model = env.get("SKYQUERY_MODEL", "openai/gpt-oss-120b")
         elif prov in ("auto", "anthropic") and env.get("ANTHROPIC_API_KEY"):

@@ -4,10 +4,24 @@ Run with:
     streamlit run app.py
 """
 from __future__ import annotations
+import os
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
+
+# Sync Streamlit Cloud secrets into os.environ
+try:
+    if hasattr(st, "secrets"):
+        for k, v in st.secrets.items():
+            if isinstance(v, (str, int, float, bool)):
+                os.environ.setdefault(str(k), str(v))
+            elif isinstance(v, dict):
+                for sub_k, sub_v in v.items():
+                    if isinstance(sub_v, (str, int, float, bool)):
+                        os.environ.setdefault(str(sub_k), str(sub_v))
+except Exception:
+    pass
 
 from skyquery.agent import SkyQueryAgent
 from skyquery.planner import LLMPlanner
@@ -247,17 +261,15 @@ def get_store() -> GridStore:
 
 
 @st.cache_resource
-def get_agent(use_llm: bool) -> SkyQueryAgent:
+def get_agent(use_llm: bool, groq_key_hash: str = "") -> SkyQueryAgent:
     store = get_store()
     llm = LLMPlanner() if use_llm else LLMPlanner("none")
     return SkyQueryAgent(store=store, llm=llm)
 
 
-@st.cache_resource
 def get_llm_probe() -> tuple[LLMPlanner, str]:
     planner = LLMPlanner("groq")
-    status = planner.startup_self_test()
-    print(f"Groq planner startup self-test: {status}")
+    status = planner.startup_self_test() if planner.available else "No API key configured"
     return planner, status
 
 
@@ -606,10 +618,25 @@ def render_response(resp, message_id: int) -> None:
 # Sidebar Configuration Panel
 # -----------------------------------------------------------------------------
 store = get_store()
+groq_key_val = os.environ.get("GROQ_API_KEY", "")
 llm_probe, groq_status = get_llm_probe()
 
 with st.sidebar:
     st.markdown("### Configuration")
+
+    if not llm_probe.available:
+        st.info("💡 **LLM Planner is offline.** Enter your Groq API Key below to activate it:")
+        user_key = st.text_input(
+            "Groq API Key",
+            type="password",
+            placeholder="gsk_...",
+            help="Get a free key from https://console.groq.com. Alternatively, add GROQ_API_KEY to Streamlit Cloud Settings → Secrets.",
+            key="sidebar_groq_key_input",
+        )
+        if user_key and user_key.strip() != groq_key_val:
+            os.environ["GROQ_API_KEY"] = user_key.strip()
+            st.rerun()
+
     use_llm = st.toggle(
         "Use LLM planner",
         value=llm_probe.available,
@@ -692,7 +719,7 @@ if active_query:
         st.write(active_query)
 
     # Initialize agent with fail-safe fallback
-    agent = get_agent(bool(use_llm and llm_probe.available))
+    agent = get_agent(bool(use_llm and llm_probe.available), groq_key_val)
 
     try:
         with st.spinner("Analyzing satellite data..."):
